@@ -1,6 +1,7 @@
 from micromojograd.engine import Value
 from micromojograd.nn import Neuron, Layer, MLP
-from std.testing import assert_almost_equal, assert_equal, TestSuite
+from std.random import seed
+from std.testing import assert_almost_equal, assert_equal, assert_true, TestSuite
 
 
 def test_linear_neuron_forward_and_parameters() raises:
@@ -108,6 +109,22 @@ def test_mlp_parameter_update_and_zero_grad() raises:
     assert_almost_equal(parameters[1].grad(), 0.0, atol=1e-12)
     var updated = mlp([Value(3.0)])
     assert_almost_equal(updated[0].data(), 5.0, atol=1e-12)
+
+
+def test_random_initialization_constructors() raises:
+    seed(42)
+    var neuron = Neuron(2, nonlin=False)
+    var neuron_parameters = neuron.parameters()
+    assert_equal(len(neuron_parameters), 3)
+    for i in range(len(neuron_parameters)):
+        assert_true(neuron_parameters[i].data() >= -1.0)
+        assert_true(neuron_parameters[i].data() < 1.0)
+    var layer = Layer(2, 3, nonlin=False)
+    assert_equal(len(layer([Value(1.0), Value(1.0)])), 3)
+    assert_equal(len(layer.parameters()), 9)
+    var mlp = MLP(2, [3, 1])
+    assert_equal(len(mlp([Value(1.0), Value(1.0)])), 1)
+    assert_equal(len(mlp.parameters()), 13)
 
 
 def main() raises:
