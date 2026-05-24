@@ -14,6 +14,39 @@ struct _Node(Movable):
         self.operation = ""
 
 
+def _was_visited(node: ArcPointer[_Node], visited: List[ArcPointer[_Node]]) -> Bool:
+    for existing in visited:
+        if node is existing:
+            return True
+    return False
+
+
+def _build_topology(
+    node: ArcPointer[_Node],
+    mut topology: List[ArcPointer[_Node]],
+    mut visited: List[ArcPointer[_Node]],
+):
+    if _was_visited(node, visited):
+        return
+    visited.append(node)
+    for parent in node[].previous:
+        _build_topology(parent, topology, visited)
+    topology.append(node)
+
+
+def _backward_node(node: ArcPointer[_Node]):
+    if node[].operation == "+":
+        var left = node[].previous[0]
+        var right = node[].previous[1]
+        left[].grad += node[].grad
+        right[].grad += node[].grad
+    elif node[].operation == "*":
+        var left = node[].previous[0]
+        var right = node[].previous[1]
+        left[].grad += right[].data * node[].grad
+        right[].grad += left[].data * node[].grad
+
+
 struct Value(Writable, ImplicitlyCopyable):
     var _node: ArcPointer[_Node]
 
@@ -53,13 +86,12 @@ struct Value(Writable, ImplicitlyCopyable):
         return out
 
     def _backward(self):
-        if self.operation() == "+":
-            var left = self._node[].previous[0]
-            var right = self._node[].previous[1]
-            left[].grad += self.grad()
-            right[].grad += self.grad()
-        elif self.operation() == "*":
-            var left = self._node[].previous[0]
-            var right = self._node[].previous[1]
-            left[].grad += right[].data * self.grad()
-            right[].grad += left[].data * self.grad()
+        _backward_node(self._node)
+
+    def backward(self):
+        var topology = List[ArcPointer[_Node]]()
+        var visited = List[ArcPointer[_Node]]()
+        _build_topology(self._node, topology, visited)
+        self.set_grad(1.0)
+        for node in reversed(topology):
+            _backward_node(node)
