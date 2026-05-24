@@ -21,3 +21,22 @@ struct Neuron(Movable):
         var parameters = self.w.copy()
         parameters.append(self.b)
         return parameters^
+
+
+struct Layer(Movable):
+    var neurons: List[Neuron]
+
+    def __init__(out self, var neurons: List[Neuron]):
+        self.neurons = neurons^
+
+    def __call__(self, inputs: List[Value]) -> List[Value]:
+        var outputs = List[Value]()
+        for i in range(len(self.neurons)):
+            outputs.append(self.neurons[i](inputs))
+        return outputs^
+
+    def parameters(self) -> List[Value]:
+        var parameters = List[Value]()
+        for i in range(len(self.neurons)):
+            parameters.extend(self.neurons[i].parameters())
+        return parameters^
