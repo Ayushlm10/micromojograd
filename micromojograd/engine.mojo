@@ -6,12 +6,14 @@ struct _Node(Movable):
     var grad: Float64
     var previous: List[ArcPointer[Self]]
     var operation: String
+    var exponent: Float64
 
     def __init__(out self, data: Float64):
         self.data = data
         self.grad = 0.0
         self.previous = []
         self.operation = ""
+        self.exponent = 0.0
 
 
 def _was_visited(node: ArcPointer[_Node], visited: List[ArcPointer[_Node]]) -> Bool:
@@ -45,6 +47,11 @@ def _backward_node(node: ArcPointer[_Node]):
         var right = node[].previous[1]
         left[].grad += right[].data * node[].grad
         right[].grad += left[].data * node[].grad
+    elif node[].operation == "**":
+        var base = node[].previous[0]
+        base[].grad += (
+            node[].exponent * (base[].data ** (node[].exponent - 1.0)) * node[].grad
+        )
 
 
 struct Value(Writable, ImplicitlyCopyable):
@@ -84,6 +91,22 @@ struct Value(Writable, ImplicitlyCopyable):
         out._node[].previous.append(other._node)
         out._node[].operation = "*"
         return out
+
+    def __pow__(self, exponent: Float64) -> Self:
+        var out = Self(self.data() ** exponent)
+        out._node[].previous.append(self._node)
+        out._node[].operation = "**"
+        out._node[].exponent = exponent
+        return out
+
+    def __neg__(self) -> Self:
+        return self * Self(-1.0)
+
+    def __sub__(self, other: Self) -> Self:
+        return self + (-other)
+
+    def __truediv__(self, other: Self) -> Self:
+        return self * (other ** -1.0)
 
     def _backward(self):
         _backward_node(self._node)
