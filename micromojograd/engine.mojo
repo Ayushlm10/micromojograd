@@ -52,6 +52,9 @@ def _backward_node(node: ArcPointer[_Node]):
         base[].grad += (
             node[].exponent * (base[].data ** (node[].exponent - 1.0)) * node[].grad
         )
+    elif node[].operation == "relu":
+        var input = node[].previous[0]
+        input[].grad += (1.0 if input[].data > 0.0 else 0.0) * node[].grad
 
 
 struct Value(Writable, ImplicitlyCopyable):
@@ -131,6 +134,12 @@ struct Value(Writable, ImplicitlyCopyable):
 
     def __rtruediv__(self, other: Float64) -> Self:
         return Self(other) / self
+
+    def relu(self) -> Self:
+        var out = Self(self.data() if self.data() > 0.0 else 0.0)
+        out._node[].previous.append(self._node)
+        out._node[].operation = "relu"
+        return out
 
     def _backward(self):
         _backward_node(self._node)
