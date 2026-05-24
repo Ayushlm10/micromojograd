@@ -92,5 +92,23 @@ def test_mlp_backward_through_layers() raises:
     assert_almost_equal(output_weight_second.grad(), 4.0, atol=1e-12)
 
 
+def test_mlp_parameter_update_and_zero_grad() raises:
+    var neuron = Neuron([Value(2.0)], Value(0.0), nonlin=False)
+    var layer = Layer([neuron^])
+    var mlp = MLP([layer^])
+    var output = mlp([Value(3.0)])
+    output[0].backward()
+    var parameters = mlp.parameters()
+    assert_almost_equal(parameters[0].grad(), 3.0, atol=1e-12)
+    assert_almost_equal(parameters[1].grad(), 1.0, atol=1e-12)
+    for i in range(len(parameters)):
+        parameters[i].set_data(parameters[i].data() - 0.1 * parameters[i].grad())
+    mlp.zero_grad()
+    assert_almost_equal(parameters[0].grad(), 0.0, atol=1e-12)
+    assert_almost_equal(parameters[1].grad(), 0.0, atol=1e-12)
+    var updated = mlp([Value(3.0)])
+    assert_almost_equal(updated[0].data(), 5.0, atol=1e-12)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

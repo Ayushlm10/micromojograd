@@ -22,6 +22,11 @@ struct Neuron(Movable):
         parameters.append(self.b)
         return parameters^
 
+    def zero_grad(self):
+        for i in range(len(self.w)):
+            self.w[i].zero_grad()
+        self.b.zero_grad()
+
 
 struct Layer(Movable):
     var neurons: List[Neuron]
@@ -41,6 +46,10 @@ struct Layer(Movable):
             parameters.extend(self.neurons[i].parameters())
         return parameters^
 
+    def zero_grad(self):
+        for i in range(len(self.neurons)):
+            self.neurons[i].zero_grad()
+
 
 struct MLP(Movable):
     var layers: List[Layer]
@@ -59,3 +68,7 @@ struct MLP(Movable):
         for i in range(len(self.layers)):
             parameters.extend(self.layers[i].parameters())
         return parameters^
+
+    def zero_grad(self):
+        for i in range(len(self.layers)):
+            self.layers[i].zero_grad()

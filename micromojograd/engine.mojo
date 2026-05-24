@@ -66,11 +66,17 @@ struct Value(Writable, ImplicitlyCopyable):
     def data(self) -> Float64:
         return self._node[].data
 
+    def set_data(self, data: Float64):
+        self._node[].data = data
+
     def grad(self) -> Float64:
         return self._node[].grad
 
     def set_grad(self, grad: Float64):
         self._node[].grad = grad
+
+    def zero_grad(self):
+        self.set_grad(0.0)
 
     def operation(self) -> String:
         return self._node[].operation
