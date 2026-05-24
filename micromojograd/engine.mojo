@@ -85,12 +85,24 @@ struct Value(Writable, ImplicitlyCopyable):
         out._node[].operation = "+"
         return out
 
+    def __add__(self, other: Float64) -> Self:
+        return self + Self(other)
+
+    def __radd__(self, other: Float64) -> Self:
+        return self + other
+
     def __mul__(self, other: Self) -> Self:
         var out = Self(self.data() * other.data())
         out._node[].previous.append(self._node)
         out._node[].previous.append(other._node)
         out._node[].operation = "*"
         return out
+
+    def __mul__(self, other: Float64) -> Self:
+        return self * Self(other)
+
+    def __rmul__(self, other: Float64) -> Self:
+        return self * other
 
     def __pow__(self, exponent: Float64) -> Self:
         var out = Self(self.data() ** exponent)
@@ -100,13 +112,25 @@ struct Value(Writable, ImplicitlyCopyable):
         return out
 
     def __neg__(self) -> Self:
-        return self * Self(-1.0)
+        return self * -1.0
 
     def __sub__(self, other: Self) -> Self:
         return self + (-other)
 
+    def __sub__(self, other: Float64) -> Self:
+        return self - Self(other)
+
+    def __rsub__(self, other: Float64) -> Self:
+        return Self(other) - self
+
     def __truediv__(self, other: Self) -> Self:
         return self * (other ** -1.0)
+
+    def __truediv__(self, other: Float64) -> Self:
+        return self / Self(other)
+
+    def __rtruediv__(self, other: Float64) -> Self:
+        return Self(other) / self
 
     def _backward(self):
         _backward_node(self._node)

@@ -1,8 +1,9 @@
 ---
-summary: Explains why autodiff values use shared graph-node identity in Mojo and how ArcPointer preserves Python-like reference behavior.
+summary: Explains the Mojo `Value` design: shared graph-node identity and typed scalar operator overloads replacing Python runtime coercion.
 read_when:
-  - Changing Value, _Node, graph construction, or gradient accumulation
+  - Changing Value, _Node, graph construction, gradient accumulation, or arithmetic operators
   - Comparing the Mojo autodiff model to the Python scratchgrad implementation
+  - Adding scalar-left or scalar-right Value expressions
 ---
 
 # Shared Node Identity
@@ -21,8 +22,8 @@ Python class instances already have reference identity: placing `self` in `_prev
 
 ## Key Files
 
-- `micromojograd/engine.mojo`: defines `_Node`, the `Value` pointer-backed handle, and graph edges created by arithmetic operations.
-- `main.mojo`: executable example that displays leaf and operation-node metadata.
+- `micromojograd/engine.mojo`: defines `_Node`, the pointer-backed `Value` handle, graph/backward behavior, and typed arithmetic overloads.
+- `main.mojo`: executable example exercising scalar-left and scalar-right autodiff expressions.
 
 ## How It Works
 
@@ -67,9 +68,42 @@ c Value ─────────────> Node C(data=A+B, operation="+")
 
 Thus, when gradient propagation mutates `Node A.grad` through `c.previous[0]`, `a.grad()` reads the same storage.
 
+### Scalar arithmetic: overloads instead of runtime coercion
+
+The Python implementation can accept `Value | float` and normalize operands at runtime:
+
+```python
+other = other if isinstance(other, Value) else Value(other)
+```
+
+Mojo resolves argument types at compile time. `Value` therefore provides separate overloads for graph operands and `Float64` operands:
+
+```mojo
+def __add__(self, other: Self) -> Self:
+    ...
+
+def __add__(self, other: Float64) -> Self:
+    return self + Self(other)
+```
+
+The `Float64` overload turns the scalar into a constant `Value` leaf, then delegates to the `Value`-to-`Value` implementation. This keeps graph creation and derivative rules in one place.
+
+Operators also need reverse overloads when a scalar is on the left, because `Float64` does not know how to combine itself with `Value`:
+
+```mojo
+def __radd__(self, other: Float64) -> Self:
+    return self + other
+
+def __rtruediv__(self, other: Float64) -> Self:
+    return Self(other) / self
+```
+
+This enables expressions such as `1.0 + x`, `3.0 * x`, `10.0 - x`, and `8.0 / x`. Scalar constant leaves participate in the graph but are not user parameters whose gradients normally need inspection.
+
 ## Gotchas
 
 - Shared node identity is required for reused values and shared intermediates; a copied tree is not the original computation graph.
 - `_Node` is `Movable` because `ArcPointer(_Node(data))` moves a constructed node into managed heap storage.
 - `Value` is `ImplicitlyCopyable` because copying its `ArcPointer` handle should share one node; `_Node` itself is not implicitly copyable.
-- Parent links currently record graph structure and operation names; local derivative propagation and a full `backward()` traversal are not implemented yet.
+- Do not reproduce Python's `isinstance` coercion pattern in Mojo; add explicit typed overloads and reversed methods when operand order matters.
+- `backward()` and power/derived arithmetic are implemented; activation functions such as `relu()` are not yet present.
