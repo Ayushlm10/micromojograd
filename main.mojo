@@ -5,7 +5,19 @@ def main():
     var a = Value(2.0)
     var b = Value(-3.0)
     var c = a + b
-    var d = a * b
-    print(a, "grad=", a.grad(), "parents=", a.previous_count())
-    print(c, "grad=", c.grad(), "op=", c.operation(), "parents=", c.previous_count())
-    print(d, "grad=", d.grad(), "op=", d.operation(), "parents=", d.previous_count())
+    c.set_grad(1.0)
+    c._backward()
+    print(c, "op=", c.operation(), "a.grad=", a.grad(), "b.grad=", b.grad())
+
+    var x = Value(2.0)
+    var y = Value(-3.0)
+    var z = x * y
+    z.set_grad(1.0)
+    z._backward()
+    print(z, "op=", z.operation(), "x.grad=", x.grad(), "y.grad=", y.grad())
+
+    var p = Value(2.0)
+    var q = p * p
+    q.set_grad(1.0)
+    q._backward()
+    print(q, "op=", q.operation(), "p.grad=", p.grad())

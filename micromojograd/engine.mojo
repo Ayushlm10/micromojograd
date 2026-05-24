@@ -26,6 +26,9 @@ struct Value(Writable, ImplicitlyCopyable):
     def grad(self) -> Float64:
         return self._node[].grad
 
+    def set_grad(self, grad: Float64):
+        self._node[].grad = grad
+
     def operation(self) -> String:
         return self._node[].operation
 
@@ -48,3 +51,15 @@ struct Value(Writable, ImplicitlyCopyable):
         out._node[].previous.append(other._node)
         out._node[].operation = "*"
         return out
+
+    def _backward(self):
+        if self.operation() == "+":
+            var left = self._node[].previous[0]
+            var right = self._node[].previous[1]
+            left[].grad += self.grad()
+            right[].grad += self.grad()
+        elif self.operation() == "*":
+            var left = self._node[].previous[0]
+            var right = self._node[].previous[1]
+            left[].grad += right[].data * self.grad()
+            right[].grad += left[].data * self.grad()
