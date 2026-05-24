@@ -127,5 +127,21 @@ def test_random_initialization_constructors() raises:
     assert_equal(len(mlp.parameters()), 13)
 
 
+def test_training_loop_reduces_loss() raises:
+    var neuron = Neuron([Value(0.0)], Value(0.0), nonlin=False)
+    var layer = Layer([neuron^])
+    var mlp = MLP([layer^])
+    for _ in range(10):
+        mlp.zero_grad()
+        var outputs = mlp([Value(2.0)])
+        var loss = (outputs[0] - 4.0) ** 2.0
+        loss.backward()
+        var parameters = mlp.parameters()
+        for i in range(len(parameters)):
+            parameters[i].set_data(parameters[i].data() - 0.05 * parameters[i].grad())
+    var trained = mlp([Value(2.0)])
+    assert_almost_equal(trained[0].data(), 4.0, atol=0.01)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
