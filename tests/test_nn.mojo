@@ -1,5 +1,5 @@
 from micromojograd.engine import Value
-from micromojograd.nn import Neuron, Layer
+from micromojograd.nn import Neuron, Layer, MLP
 from std.testing import assert_almost_equal, assert_equal, TestSuite
 
 
@@ -55,6 +55,41 @@ def test_layer_shared_input_backward() raises:
     assert_almost_equal(out.data(), 8.0, atol=1e-12)
     assert_almost_equal(x0.grad(), 1.0, atol=1e-12)
     assert_almost_equal(x1.grad(), 2.0, atol=1e-12)
+
+
+def test_mlp_forward_and_parameters() raises:
+    var hidden_first = Neuron([Value(1.0), Value(0.0)], Value(0.0))
+    var hidden_second = Neuron([Value(0.0), Value(1.0)], Value(0.0))
+    var hidden = Layer([hidden_first^, hidden_second^])
+    var output_neuron = Neuron([Value(2.0), Value(-1.0)], Value(0.5), nonlin=False)
+    var output = Layer([output_neuron^])
+    var mlp = MLP([hidden^, output^])
+    var outputs = mlp([Value(3.0), Value(4.0)])
+    var parameters = mlp.parameters()
+    assert_equal(len(outputs), 1)
+    assert_almost_equal(outputs[0].data(), 2.5, atol=1e-12)
+    assert_equal(len(parameters), 9)
+
+
+def test_mlp_backward_through_layers() raises:
+    var x0 = Value(3.0)
+    var x1 = Value(4.0)
+    var output_weight_first = Value(2.0)
+    var output_weight_second = Value(-1.0)
+    var hidden_first = Neuron([Value(1.0), Value(0.0)], Value(0.0))
+    var hidden_second = Neuron([Value(0.0), Value(1.0)], Value(0.0))
+    var hidden = Layer([hidden_first^, hidden_second^])
+    var output_neuron = Neuron(
+        [output_weight_first, output_weight_second], Value(0.5), nonlin=False
+    )
+    var output = Layer([output_neuron^])
+    var mlp = MLP([hidden^, output^])
+    var outputs = mlp([x0, x1])
+    outputs[0].backward()
+    assert_almost_equal(x0.grad(), 2.0, atol=1e-12)
+    assert_almost_equal(x1.grad(), -1.0, atol=1e-12)
+    assert_almost_equal(output_weight_first.grad(), 3.0, atol=1e-12)
+    assert_almost_equal(output_weight_second.grad(), 4.0, atol=1e-12)
 
 
 def main() raises:

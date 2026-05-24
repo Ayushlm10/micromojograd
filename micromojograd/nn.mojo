@@ -40,3 +40,22 @@ struct Layer(Movable):
         for i in range(len(self.neurons)):
             parameters.extend(self.neurons[i].parameters())
         return parameters^
+
+
+struct MLP(Movable):
+    var layers: List[Layer]
+
+    def __init__(out self, var layers: List[Layer]):
+        self.layers = layers^
+
+    def __call__(self, inputs: List[Value]) -> List[Value]:
+        var activations = inputs.copy()
+        for i in range(len(self.layers)):
+            activations = self.layers[i](activations)
+        return activations^
+
+    def parameters(self) -> List[Value]:
+        var parameters = List[Value]()
+        for i in range(len(self.layers)):
+            parameters.extend(self.layers[i].parameters())
+        return parameters^
