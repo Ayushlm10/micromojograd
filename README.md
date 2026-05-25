@@ -1,6 +1,6 @@
 # micromojograd
 
-A small scalar reverse-mode autodiff engine and multilayer perceptron built from scratch in Mojo, following the learning progression of Karpathy's micrograd.
+A small scalar reverse-mode autodiff engine and multilayer perceptron built from scratch in Mojo, following the learning progression of Karpathy's [micrograd](https://github.com/karpathy/micrograd).
 
 ## Features
 
